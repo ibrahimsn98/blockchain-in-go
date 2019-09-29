@@ -18,3 +18,7 @@ Send amount of coins
 ```
 $ go run main.go send -from FROM -to TO -amount AMOUNT
 ```
+
+
+#### Tutorials
+[Tensor Programming](https://www.youtube.com/channel/UCYqCZOwHbnPwyjawKfE21wg)
