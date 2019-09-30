@@ -29,6 +29,16 @@ List the addresses in wallet file
 $ go run main.go listaddresses
 ```
 
+Rebuild the UTXO set
+```
+$ go run main.go reindexutxo
+```
+
+Start a node with ID specified in NODE_ID env. var. -miner enables mining
+```
+$ go run main.go startnode -miner ADDRESS
+```
+
 ## Wiki
 - [How is the wallet address created?](https://github.com/ibrahimsn98/blockchain-in-go/wiki/How-is-the-wallet-address-created%3F)
 
@@ -37,7 +47,8 @@ $ go run main.go listaddresses
 - github.com/dgraph-io/badger
 - github.com/mr-tron/base58
 - golang.org/x/crypto
+- gopkg.in/vrecan/death.v3
 
 
-### Tutorials
+### Video Tutorials
 [Tensor Programming](https://www.youtube.com/channel/UCYqCZOwHbnPwyjawKfE21wg)
