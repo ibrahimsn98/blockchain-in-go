@@ -8,8 +8,7 @@ import (
 )
 
 var (
-	utxoPrefix		= []byte("utxo-")
-	prefixLength	= len(utxoPrefix)
+	utxoPrefix = []byte("utxo-")
 )
 
 type UTXOSet struct {
@@ -22,9 +21,7 @@ func (u UTXOSet) FindSpendableOutputs(pubKeyHash []byte, amount int) (int, map[s
 	db := u.BlockChain.Database
 
 	err := db.View(func(txn *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
-
-		it := txn.NewIterator(opts)
+		it := txn.NewIterator(badger.DefaultIteratorOptions)
 		defer it.Close()
 
 		for it.Seek(utxoPrefix); it.ValidForPrefix(utxoPrefix); it.Next() {

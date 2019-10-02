@@ -119,7 +119,7 @@ func (cli *CommandLine) getBalance(address, nodeID string) {
 
 	balance := 0
 	pubKeyHash := wallet.Base58Decode([]byte(address))
-	pubKeyHash = pubKeyHash[1 : len(pubKeyHash) - 4]
+	pubKeyHash = pubKeyHash[1 : len(pubKeyHash)-4]
 	UTXOs := UTXOSet.FindUnspentTransactions(pubKeyHash)
 
 	for _, out := range UTXOs {
@@ -133,20 +133,24 @@ func (cli *CommandLine) send(from, to string, amount int, nodeID string, mineNow
 	if !wallet.ValidateAddress(to) {
 		log.Panic("Address is not Valid")
 	}
+
 	if !wallet.ValidateAddress(from) {
 		log.Panic("Address is not Valid")
 	}
+
 	chain := blockchain.ContinueBlockChain(nodeID)
-	UTXOSet := blockchain.UTXOSet{chain}
+	UTXOSet := blockchain.UTXOSet{BlockChain: chain}
 	defer chain.Database.Close()
 
 	wallets, err := wallet.CreateWallets(nodeID)
 	if err != nil {
 		log.Panic(err)
 	}
+
 	wallet := wallets.GetWallet(from)
 
 	tx := blockchain.NewTransaction(&wallet, to, amount, &UTXOSet)
+
 	if mineNow {
 		cbTx := blockchain.CoinbaseTx(from, "")
 		txs := []*blockchain.Transaction{cbTx, tx}

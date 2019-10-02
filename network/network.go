@@ -26,7 +26,7 @@ var (
 	nodeAddress     string
 	mineAddress     string
 	KnownNodes      = []string{"localhost:3000"}
-	blocksInTransit = [][]byte{}
+	blocksInTransit [][]byte
 	memoryPool      = make(map[string]blockchain.Transaction)
 )
 
@@ -357,7 +357,7 @@ func MineTx(chain *blockchain.BlockChain) {
 	txs = append(txs, cbTx)
 
 	newBlock := chain.MineBlock(txs)
-	UTXOSet  := blockchain.UTXOSet{chain}
+	UTXOSet := blockchain.UTXOSet{chain}
 	UTXOSet.Reindex()
 
 	fmt.Println("New Block mined")
