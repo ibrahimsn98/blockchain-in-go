@@ -9,43 +9,11 @@ import (
 	"strings"
 )
 
-func Read(db *badger.DB, key []byte) ([]byte, error) {
-	var value []byte
-
-	err := db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(key)
-
-		if err != nil {
-			log.Panic(err)
-		}
-
-		value, err = item.ValueCopy(nil)
-
-		if err != nil {
-			log.Panic(err)
-		}
-
-		return nil
-	})
-
-	return value, err
+type Database struct {
+	DB *badger.DB
 }
 
-func Update(db *badger.DB, key []byte, value []byte) error {
-	err := db.Update(func(txn *badger.Txn) error {
-		err := txn.Set(key, value)
-
-		if err != nil {
-			log.Panic(err)
-		}
-
-		return nil
-	})
-
-	return err
-}
-
-func OpenDB(dir string) (*badger.DB, error) {
+func GetDatabase(dir string) (*Database, error) {
 	opts := badger.DefaultOptions(dir)
 	opts.Logger = nil
 
@@ -53,14 +21,53 @@ func OpenDB(dir string) (*badger.DB, error) {
 		if strings.Contains(err.Error(), "LOCK") {
 			if db, err := retry(dir, opts); err == nil {
 				log.Println("database unlocked, value log truncated")
-				return db, nil
+				return &Database{db}, nil
 			}
 			log.Println("could not unlock database:", err)
 		}
 		return nil, err
 	} else {
-		return db, nil
+		return &Database{db}, nil
 	}
+}
+
+func (db *Database) Iterator(prefetchValues bool, fn func(*badger.Iterator) error) error {
+	err := db.DB.View(func(txn *badger.Txn) error {
+
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = prefetchValues
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		return fn(it)
+	})
+
+	return err
+}
+
+func (db *Database) Read(key []byte) ([]byte, error) {
+	var value []byte
+
+	err := db.DB.View(func(txn *badger.Txn) error {
+		item, err := txn.Get(key)
+
+		if err != nil {
+			return err
+		}
+
+		value, err = item.ValueCopy(nil)
+		return err
+	})
+
+	return value, err
+}
+
+func (db *Database) Update(key []byte, value []byte) error {
+	err := db.DB.Update(func(txn *badger.Txn) error {
+		return txn.Set(key, value)
+	})
+
+	return err
 }
 
 func retry(dir string, originalOpts badger.Options) (*badger.DB, error) {

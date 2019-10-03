@@ -44,12 +44,12 @@ func ValidateAddress(address string) bool {
 	// Decode Base58 address string
 	pubKeyHash := Base58Decode([]byte(address))
 
-	// Remove checksum bytes
+	// Get actual checksum bytes
 	actualChecksum := pubKeyHash[len(pubKeyHash)-checksumLength:]
 
 	version := pubKeyHash[0]
 
-	// Remove the version byte
+	// Remove the version and checksum bytes
 	pubKeyHash = pubKeyHash[1 : len(pubKeyHash)-checksumLength]
 
 	// Get 4 bytes checksum

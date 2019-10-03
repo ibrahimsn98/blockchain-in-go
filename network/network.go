@@ -405,11 +405,11 @@ func HandleVersion(request []byte, chain *blockchain.BlockChain) {
 
 func HandleConnection(conn net.Conn, chain *blockchain.BlockChain) {
 	req, err := ioutil.ReadAll(conn)
-	defer conn.Close()
 
 	if err != nil {
 		log.Panic(err)
 	}
+
 	command := BytesToCmd(req[:commandLength])
 	fmt.Printf("Received %s command\n", command)
 
@@ -437,6 +437,7 @@ func HandleConnection(conn net.Conn, chain *blockchain.BlockChain) {
 func StartServer(nodeID, minerAddress string) {
 	nodeAddress = fmt.Sprintf("localhost:%s", nodeID)
 	mineAddress = minerAddress
+
 	ln, err := net.Listen(protocol, nodeAddress)
 	if err != nil {
 		log.Panic(err)
@@ -444,12 +445,13 @@ func StartServer(nodeID, minerAddress string) {
 	defer ln.Close()
 
 	chain := blockchain.ContinueBlockChain(nodeID)
-	defer chain.Database.Close()
+	defer chain.Database.DB.Close()
 	go CloseDB(chain)
 
 	if nodeAddress != KnownNodes[0] {
 		SendVersion(KnownNodes[0], chain)
 	}
+
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -488,6 +490,6 @@ func CloseDB(chain *blockchain.BlockChain) {
 	d.WaitForDeathWithFunc(func() {
 		defer os.Exit(1)
 		defer runtime.Goexit()
-		chain.Database.Close()
+		chain.Database.DB.Close()
 	})
 }

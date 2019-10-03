@@ -27,6 +27,7 @@ func (tx *Transaction) Hash() []byte {
 	txCopy := *tx
 	txCopy.ID = []byte{}
 
+	// Perform sha256 on serialized transaction
 	hash = sha256.Sum256(txCopy.Serialize())
 
 	return hash[:]
@@ -50,6 +51,7 @@ func DeserializeTransaction(data []byte) Transaction {
 	decoder := gob.NewDecoder(bytes.NewReader(data))
 	err := decoder.Decode(&transaction)
 	Handle(err)
+
 	return transaction
 }
 
@@ -81,8 +83,8 @@ func NewTransaction(w *wallet.Wallet, to string, amount int, UTXO *UTXOSet) *Tra
 		log.Panic("Error: not enough funds")
 	}
 
-	for txid, outs := range validOutputs {
-		txID, err := hex.DecodeString(txid)
+	for encodedTxID, outs := range validOutputs {
+		txID, err := hex.DecodeString(encodedTxID)
 		Handle(err)
 
 		for _, out := range outs {
@@ -110,7 +112,7 @@ func (tx *Transaction) IsCoinbase() bool {
 	return len(tx.Inputs) == 1 && len(tx.Inputs[0].ID) == 0 && tx.Inputs[0].Out == -1
 }
 
-func (tx *Transaction) Sign(privKey ecdsa.PrivateKey, prevTXs map[string]Transaction) {
+func (tx *Transaction) Sign(privateKey ecdsa.PrivateKey, prevTXs map[string]Transaction) {
 	if tx.IsCoinbase() {
 		return
 	}
@@ -130,7 +132,7 @@ func (tx *Transaction) Sign(privKey ecdsa.PrivateKey, prevTXs map[string]Transac
 
 		dataToSign := fmt.Sprintf("%x\n", txCopy)
 
-		r, s, err := ecdsa.Sign(rand.Reader, &privKey, []byte(dataToSign))
+		r, s, err := ecdsa.Sign(rand.Reader, &privateKey, []byte(dataToSign))
 		Handle(err)
 		signature := append(r.Bytes(), s.Bytes()...)
 

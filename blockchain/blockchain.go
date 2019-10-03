@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/dgraph-io/badger"
 	"log"
 	"os"
 	"runtime"
@@ -20,12 +19,12 @@ const (
 
 type BlockChain struct {
 	LastHash []byte
-	Database *badger.DB
+	Database *database.Database
 }
 
 type ChainIterator struct {
 	CurrentHash []byte
-	Database    *badger.DB
+	Database    *database.Database
 }
 
 func DBExists(path string) bool {
@@ -44,19 +43,26 @@ func InitBlockChain(address, nodeId string) *BlockChain {
 		runtime.Goexit()
 	}
 
-	db, err := database.OpenDB(path)
+	// Get database instance
+	db, err := database.GetDatabase(path)
 	Handle(err)
 
+	// Create coinbase transaction
 	cbtx := CoinbaseTx(address, genesisData)
+
+	// Create genesis block
 	genesis := Genesis(cbtx)
 	fmt.Println("Genesis created")
 
-	err = database.Update(db, genesis.Hash, genesis.Serialize())
+	// Store genesis block data
+	err = db.Update(genesis.Hash, genesis.Serialize())
 	Handle(err)
 
-	err = database.Update(db, []byte("lh"), genesis.Hash)
+	// Set last hash as genesis block hash
+	err = db.Update([]byte("lh"), genesis.Hash)
 	Handle(err)
 
+	// Return chain that has only genesis block
 	blockchain := BlockChain{genesis.Hash, db}
 	return &blockchain
 }
@@ -69,14 +75,14 @@ func ContinueBlockChain(nodeId string) *BlockChain {
 		runtime.Goexit()
 	}
 
-	db, err := database.OpenDB(path)
+	db, err := database.GetDatabase(path)
 	Handle(err)
 
-	lastHash, err := database.Read(db, []byte("lh"))
+	// Get last block hash
+	lastHash, err := db.Read([]byte("lh"))
 	Handle(err)
 
 	chain := BlockChain{lastHash, db}
-
 	return &chain
 }
 
@@ -87,20 +93,26 @@ func (chain *BlockChain) MineBlock(transactions []*Transaction) *Block {
 		}
 	}
 
-	lastHash, err := database.Read(chain.Database, []byte("lh"))
+	// Get last block hash
+	lastHash, err := chain.Database.Read([]byte("lh"))
 	Handle(err)
 
-	lastBlockData, err := database.Read(chain.Database, lastHash)
+	// Get serialized last block data
+	lastBlockBytes, err := chain.Database.Read(lastHash)
 	Handle(err)
 
-	lastBlock := *Deserialize(lastBlockData)
+	// Deserialize byte data to block
+	lastBlock := *Deserialize(lastBlockBytes)
 
+	// Create new block
 	newBlock := CreateBlock(transactions, lastHash, lastBlock.Height+1)
 
-	err = database.Update(chain.Database, newBlock.Hash, newBlock.Serialize())
+	// Store new block
+	err = chain.Database.Update(newBlock.Hash, newBlock.Serialize())
 	Handle(err)
 
-	err = database.Update(chain.Database, []byte("lh"), newBlock.Hash)
+	// Update last block hash
+	err = chain.Database.Update([]byte("lh"), newBlock.Hash)
 	Handle(err)
 
 	chain.LastHash = newBlock.Hash
@@ -109,25 +121,31 @@ func (chain *BlockChain) MineBlock(transactions []*Transaction) *Block {
 }
 
 func (chain *BlockChain) AddBlock(block *Block) {
-	_, err := database.Read(chain.Database, block.Hash)
 
+	// If the chain already has this block, cancel the process
+	_, err := chain.Database.Read(block.Hash)
 	if err == nil {
 		return
 	}
 
-	err = database.Update(chain.Database, block.Hash, block.Serialize())
+	// Store new block
+	err = chain.Database.Update(block.Hash, block.Serialize())
 	Handle(err)
 
-	lastHash, err := database.Read(chain.Database, []byte("lh"))
+	// Get last block hash
+	lastHash, err := chain.Database.Read([]byte("lh"))
 	Handle(err)
 
-	lastBlockData, err := database.Read(chain.Database, lastHash)
+	// Get serialized last block data
+	lastBlockData, err := chain.Database.Read(lastHash)
 	Handle(err)
 
+	// Deserialize byte data to block
 	lastBlock := Deserialize(lastBlockData)
 
+	// If block height is bigger than last block height, set it as the last block
 	if block.Height > lastBlock.Height {
-		err := database.Update(chain.Database, []byte("lh"), block.Hash)
+		err := chain.Database.Update([]byte("lh"), block.Hash)
 		Handle(err)
 
 		chain.LastHash = block.Hash
@@ -141,9 +159,9 @@ func (chain *BlockChain) GetBlockHashes() [][]byte {
 
 	for {
 		block := iter.Next()
-
 		blocks = append(blocks, block.Hash)
 
+		// Iterate until the first block
 		if len(block.PrevHash) == 0 {
 			break
 		}
@@ -153,7 +171,7 @@ func (chain *BlockChain) GetBlockHashes() [][]byte {
 }
 
 func (chain *BlockChain) GetBlock(blockHash []byte) (Block, error) {
-	blockData, err := database.Read(chain.Database, blockHash)
+	blockData, err := chain.Database.Read(blockHash)
 
 	if err != nil {
 		log.Panic("block is not found")
@@ -163,10 +181,10 @@ func (chain *BlockChain) GetBlock(blockHash []byte) (Block, error) {
 }
 
 func (chain *BlockChain) GetBestHeight() int {
-	lastHash, err := database.Read(chain.Database, []byte("lh"))
+	lastHash, err := chain.Database.Read([]byte("lh"))
 	Handle(err)
 
-	lastBlockData, err := database.Read(chain.Database, lastHash)
+	lastBlockData, err := chain.Database.Read(lastHash)
 	Handle(err)
 
 	lastBlock := *Deserialize(lastBlockData)
@@ -175,13 +193,11 @@ func (chain *BlockChain) GetBestHeight() int {
 }
 
 func (chain *BlockChain) Iterator() *ChainIterator {
-	iter := &ChainIterator{chain.LastHash, chain.Database}
-
-	return iter
+	return &ChainIterator{chain.LastHash, chain.Database}
 }
 
 func (iter *ChainIterator) Next() *Block {
-	currentBlockData, err := database.Read(iter.Database, iter.CurrentHash)
+	currentBlockData, err := iter.Database.Read(iter.CurrentHash)
 	Handle(err)
 
 	block := Deserialize(currentBlockData)
@@ -190,6 +206,8 @@ func (iter *ChainIterator) Next() *Block {
 	return block
 }
 
+// Finds unspent transaction outputs
+// Unspent means that these outputs were not referenced in any inputs
 func (chain *BlockChain) FindUTXO() map[string]TxOutputs {
 	UTXO := make(map[string]TxOutputs)
 	spentTXOs := make(map[string][]int)
@@ -199,10 +217,12 @@ func (chain *BlockChain) FindUTXO() map[string]TxOutputs {
 	for {
 		block := iter.Next()
 
+		// Iterate transactions
 		for _, tx := range block.Transactions {
 			txID := hex.EncodeToString(tx.ID)
 
 		Outputs:
+			// Iterate transaction outputs
 			for outIdx, out := range tx.Outputs {
 				if spentTXOs[txID] != nil {
 					for _, spentOut := range spentTXOs[txID] {
@@ -211,10 +231,12 @@ func (chain *BlockChain) FindUTXO() map[string]TxOutputs {
 						}
 					}
 				}
+
 				outs := UTXO[txID]
 				outs.Outputs = append(outs.Outputs, out)
 				UTXO[txID] = outs
 			}
+
 			if tx.IsCoinbase() == false {
 				for _, in := range tx.Inputs {
 					inTxID := hex.EncodeToString(in.ID)
@@ -240,10 +262,12 @@ func (chain *BlockChain) FindUnspentTransactions(pubKeyHash []byte) []Transactio
 	for {
 		block := iter.Next()
 
+		// Iterate transactions
 		for _, tx := range block.Transactions {
 			txID := hex.EncodeToString(tx.ID)
 
 		Outputs:
+			// Iterate transaction outputs
 			for outIdx, out := range tx.Outputs {
 				if spentTXOs[txID] != nil {
 					for _, spentOut := range spentTXOs[txID] {
@@ -252,10 +276,12 @@ func (chain *BlockChain) FindUnspentTransactions(pubKeyHash []byte) []Transactio
 						}
 					}
 				}
+
 				if out.IsLockedWithKey(pubKeyHash) {
 					unspentTxs = append(unspentTxs, *tx)
 				}
 			}
+
 			if tx.IsCoinbase() == false {
 				for _, in := range tx.Inputs {
 					if in.UsesKey(pubKeyHash) {
@@ -317,16 +343,17 @@ func (chain *BlockChain) FindTransaction(ID []byte) (Transaction, error) {
 	return Transaction{}, errors.New("transaction does not exist")
 }
 
-func (chain *BlockChain) SignTransaction(tx *Transaction, privKey ecdsa.PrivateKey) {
+func (chain *BlockChain) SignTransaction(tx *Transaction, privateKey ecdsa.PrivateKey) {
 	prevTXs := make(map[string]Transaction)
 
+	// Iterate previous transactions
 	for _, in := range tx.Inputs {
 		prevTX, err := chain.FindTransaction(in.ID)
 		Handle(err)
 		prevTXs[hex.EncodeToString(prevTX.ID)] = prevTX
 	}
 
-	tx.Sign(privKey, prevTXs)
+	tx.Sign(privateKey, prevTXs)
 }
 
 func (chain *BlockChain) VerifyTransaction(tx *Transaction) bool {
