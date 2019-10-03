@@ -48,8 +48,14 @@ func (cli *CommandLine) StartNode(nodeID, minerAddress string) {
 
 func (cli *CommandLine) reindexUTXO(nodeID string) {
 	chain := blockchain.ContinueBlockChain(nodeID)
-	defer chain.Database.DB.Close()
-	UTXOSet := blockchain.UTXOSet{chain}
+	defer func() {
+		err := chain.Database.DB.Close()
+		if err != nil {
+			log.Panic(err)
+		}
+	}()
+
+	UTXOSet := blockchain.UTXOSet{BlockChain: chain}
 	UTXOSet.Reindex()
 
 	count := UTXOSet.CountTransactions()
@@ -75,7 +81,13 @@ func (cli *CommandLine) createWallet(nodeID string) {
 
 func (cli *CommandLine) printChain(nodeID string) {
 	chain := blockchain.ContinueBlockChain(nodeID)
-	defer chain.Database.DB.Close()
+	defer func() {
+		err := chain.Database.DB.Close()
+		if err != nil {
+			log.Panic(err)
+		}
+	}()
+
 	iter := chain.Iterator()
 
 	for {
@@ -100,10 +112,16 @@ func (cli *CommandLine) createBlockChain(address, nodeID string) {
 	if !wallet.ValidateAddress(address) {
 		log.Panic("Address is not Valid")
 	}
-	chain := blockchain.InitBlockChain(address, nodeID)
-	defer chain.Database.DB.Close()
 
-	UTXOSet := blockchain.UTXOSet{chain}
+	chain := blockchain.InitBlockChain(address, nodeID)
+	defer func() {
+		err := chain.Database.DB.Close()
+		if err != nil {
+			log.Panic(err)
+		}
+	}()
+
+	UTXOSet := blockchain.UTXOSet{BlockChain: chain}
 	UTXOSet.Reindex()
 
 	fmt.Println("Finished!")
@@ -116,7 +134,12 @@ func (cli *CommandLine) getBalance(address, nodeID string) {
 
 	chain := blockchain.ContinueBlockChain(nodeID)
 	UTXOSet := blockchain.UTXOSet{BlockChain: chain}
-	defer chain.Database.DB.Close()
+	defer func() {
+		err := chain.Database.DB.Close()
+		if err != nil {
+			log.Panic(err)
+		}
+	}()
 
 	balance := 0
 	pubKeyHash := wallet.Base58Decode([]byte(address))
@@ -140,17 +163,23 @@ func (cli *CommandLine) send(from, to string, amount int, nodeID string, mineNow
 	}
 
 	chain := blockchain.ContinueBlockChain(nodeID)
+
 	UTXOSet := blockchain.UTXOSet{BlockChain: chain}
-	defer chain.Database.DB.Close()
+	defer func() {
+		err := chain.Database.DB.Close()
+		if err != nil {
+			log.Panic(err)
+		}
+	}()
 
 	wallets, err := wallet.CreateWallets(nodeID)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	wallet := wallets.GetWallet(from)
+	wal := wallets.GetWallet(from)
 
-	tx := blockchain.NewTransaction(&wallet, to, amount, &UTXOSet)
+	tx := blockchain.NewTransaction(&wal, to, amount, &UTXOSet)
 
 	if mineNow {
 		cbTx := blockchain.CoinbaseTx(from, "")

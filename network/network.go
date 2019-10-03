@@ -67,13 +67,13 @@ type Version struct {
 }
 
 func CmdToBytes(cmd string) []byte {
-	var bytes [commandLength]byte
+	var data [commandLength]byte
 
 	for i, c := range cmd {
-		bytes[i] = byte(c)
+		data[i] = byte(c)
 	}
 
-	return bytes[:]
+	return data[:]
 }
 
 func BytesToCmd(bytes []byte) string {
@@ -86,10 +86,6 @@ func BytesToCmd(bytes []byte) string {
 	}
 
 	return fmt.Sprintf("%s", cmd)
-}
-
-func ExtractCmd(request []byte) []byte {
-	return request[:commandLength]
 }
 
 func RequestBlocks() {
@@ -133,7 +129,12 @@ func SendData(addr string, data []byte) {
 		return
 	}
 
-	defer conn.Close()
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			log.Panic(err)
+		}
+	}()
 
 	_, err = io.Copy(conn, bytes.NewReader(data))
 	if err != nil {
@@ -246,7 +247,7 @@ func HandleInv(request []byte, chain *blockchain.BlockChain) {
 		blockHash := payload.Items[0]
 		SendGetData(payload.AddrFrom, "block", blockHash)
 
-		newInTransit := [][]byte{}
+		var newInTransit [][]byte
 		for _, b := range blocksInTransit {
 			if bytes.Compare(b, blockHash) != 0 {
 				newInTransit = append(newInTransit, b)
@@ -357,7 +358,7 @@ func MineTx(chain *blockchain.BlockChain) {
 	txs = append(txs, cbTx)
 
 	newBlock := chain.MineBlock(txs)
-	UTXOSet := blockchain.UTXOSet{chain}
+	UTXOSet := blockchain.UTXOSet{BlockChain: chain}
 	UTXOSet.Reindex()
 
 	fmt.Println("New Block mined")
@@ -439,13 +440,26 @@ func StartServer(nodeID, minerAddress string) {
 	mineAddress = minerAddress
 
 	ln, err := net.Listen(protocol, nodeAddress)
+
 	if err != nil {
 		log.Panic(err)
 	}
-	defer ln.Close()
+
+	defer func() {
+		err := ln.Close()
+		if err != nil {
+			log.Panic(err)
+		}
+	}()
 
 	chain := blockchain.ContinueBlockChain(nodeID)
-	defer chain.Database.DB.Close()
+	defer func() {
+		err := chain.Database.DB.Close()
+		if err != nil {
+			log.Panic(err)
+		}
+	}()
+
 	go CloseDB(chain)
 
 	if nodeAddress != KnownNodes[0] {
@@ -490,6 +504,10 @@ func CloseDB(chain *blockchain.BlockChain) {
 	d.WaitForDeathWithFunc(func() {
 		defer os.Exit(1)
 		defer runtime.Goexit()
-		chain.Database.DB.Close()
+
+		err := chain.Database.DB.Close()
+		if err != nil {
+			log.Panic(err)
+		}
 	})
 }
