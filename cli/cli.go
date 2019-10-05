@@ -188,7 +188,6 @@ func (cli *CommandLine) send(from, to string, amount int, nodeID string, mineNow
 		UTXOSet.Update(block)
 	} else {
 		network.SendTx(network.KnownNodes[0], tx)
-		fmt.Println("send tx")
 	}
 
 	fmt.Println("Success!")

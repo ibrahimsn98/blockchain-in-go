@@ -365,8 +365,13 @@ func (chain *BlockChain) VerifyTransaction(tx *Transaction) bool {
 	prevTXs := make(map[string]Transaction)
 
 	for _, in := range tx.Inputs {
+		fmt.Println("TX: " + hex.EncodeToString(tx.ID) + "\nInput Prev: " + hex.EncodeToString(in.ID))
+
 		prevTX, err := chain.FindTransaction(in.ID)
 		Handle(err)
+
+		fmt.Println("Tx in DB: " + hex.EncodeToString(prevTX.ID))
+
 		prevTXs[hex.EncodeToString(prevTX.ID)] = prevTX
 	}
 

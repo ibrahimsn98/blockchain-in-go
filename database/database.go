@@ -63,6 +63,9 @@ func (db *Database) Read(key []byte) ([]byte, error) {
 }
 
 func (db *Database) Update(key []byte, value []byte) error {
+
+	fmt.Println("Add Key: " + string(key))
+
 	err := db.DB.Update(func(txn *badger.Txn) error {
 		return txn.Set(key, value)
 	})
