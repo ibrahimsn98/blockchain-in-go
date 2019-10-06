@@ -55,7 +55,7 @@ func (cli *CommandLine) reindexUTXO(nodeID string) {
 		}
 	}()
 
-	UTXOSet := blockchain.UTXOSet{BlockChain: chain}
+	UTXOSet := blockchain.UTXOSet{chain}
 	UTXOSet.Reindex()
 
 	count := UTXOSet.CountTransactions()
@@ -121,7 +121,7 @@ func (cli *CommandLine) createBlockChain(address, nodeID string) {
 		}
 	}()
 
-	UTXOSet := blockchain.UTXOSet{BlockChain: chain}
+	UTXOSet := blockchain.UTXOSet{chain}
 	UTXOSet.Reindex()
 
 	fmt.Println("Finished!")
@@ -133,7 +133,7 @@ func (cli *CommandLine) getBalance(address, nodeID string) {
 	}
 
 	chain := blockchain.ContinueBlockChain(nodeID)
-	UTXOSet := blockchain.UTXOSet{BlockChain: chain}
+	UTXOSet := blockchain.UTXOSet{chain}
 	defer func() {
 		err := chain.Database.DB.Close()
 		if err != nil {
@@ -164,7 +164,7 @@ func (cli *CommandLine) send(from, to string, amount int, nodeID string, mineNow
 
 	chain := blockchain.ContinueBlockChain(nodeID)
 
-	UTXOSet := blockchain.UTXOSet{BlockChain: chain}
+	UTXOSet := blockchain.UTXOSet{chain}
 	defer func() {
 		err := chain.Database.DB.Close()
 		if err != nil {

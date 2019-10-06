@@ -10,6 +10,7 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"log"
 	"math/big"
 	"strings"
@@ -27,8 +28,17 @@ func (tx *Transaction) Hash() []byte {
 	txCopy := *tx
 	txCopy.ID = []byte{}
 
+	salt := make([]byte, 32)
+	_, err := io.ReadFull(rand.Reader, salt)
+	if err != nil {
+		fmt.Printf("ERROR: Creating salt failed: %s\n", err)
+	}
+
+	data := txCopy.Serialize()
+	data = append(data, salt...)
+
 	// Perform sha256 on serialized transaction
-	hash = sha256.Sum256(txCopy.Serialize())
+	hash = sha256.Sum256(data)
 
 	return hash[:]
 }

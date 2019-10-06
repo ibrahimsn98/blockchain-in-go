@@ -60,6 +60,7 @@ func (pow *ProofOfWork) Run() (int, []byte) {
 		}
 
 	}
+
 	fmt.Println()
 
 	return nonce, hash[:]
