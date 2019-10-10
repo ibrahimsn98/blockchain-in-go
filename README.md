@@ -1,4 +1,4 @@
-#Blockchain in Go
+# Blockchain in Go
 [![Go Report Card](https://goreportcard.com/badge/github.com/ibrahimsn98/blockchain-in-go)](https://goreportcard.com/report/github.com/ibrahimsn98/blockchain-in-go)
 [![GitHub version](https://badge.fury.io/gh/ibrahimsn98%2Fblockchain-in-go.svg)](https://badge.fury.io/gh/ibrahimsn98%2Fblockchain-in-go)
 
