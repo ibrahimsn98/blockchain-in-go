@@ -7,6 +7,7 @@ import (
 	"log"
 )
 
+// Transform command strings to byte array
 func CmdToBytes(cmd string) []byte {
 	var data [commandLength]byte
 
@@ -17,6 +18,7 @@ func CmdToBytes(cmd string) []byte {
 	return data[:]
 }
 
+// Transform byte array to command string
 func BytesToCmd(bytes []byte) string {
 	var cmd []byte
 
@@ -29,6 +31,7 @@ func BytesToCmd(bytes []byte) string {
 	return fmt.Sprintf("%s", cmd)
 }
 
+// Encode data
 func GobEncode(data interface{}) []byte {
 	var buff bytes.Buffer
 

@@ -12,7 +12,9 @@ import (
 	"strconv"
 )
 
-type CommandLine struct{}
+// Responsible for processing command line arguments
+type CommandLine struct {
+}
 
 func (cli *CommandLine) printUsage() {
 	fmt.Println("Usage:")
@@ -33,6 +35,7 @@ func (cli *CommandLine) validateArgs() {
 	}
 }
 
+// Start node. If has miner address, start as miner
 func (cli *CommandLine) StartNode(nodeID, minerAddress string) {
 	fmt.Printf("Starting Node %s\n", nodeID)
 
@@ -43,6 +46,7 @@ func (cli *CommandLine) StartNode(nodeID, minerAddress string) {
 			log.Panic("Wrong miner address!")
 		}
 	}
+
 	network.StartServer(nodeID, minerAddress)
 }
 
@@ -193,6 +197,7 @@ func (cli *CommandLine) send(from, to string, amount int, nodeID string, mineNow
 	fmt.Println("Success!")
 }
 
+// Parse command line arguments and processes commands
 func (cli *CommandLine) Run() {
 	cli.validateArgs()
 

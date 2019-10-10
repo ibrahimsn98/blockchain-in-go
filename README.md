@@ -1,3 +1,9 @@
+#Blockchain in Go
+[![Go Report Card](https://goreportcard.com/badge/github.com/ibrahimsn98/blockchain-in-go)](https://goreportcard.com/report/github.com/ibrahimsn98/blockchain-in-go)
+[![GitHub version](https://badge.fury.io/gh/ibrahimsn98%2Fblockchain-in-go.svg)](https://badge.fury.io/gh/ibrahimsn98%2Fblockchain-in-go)
+
+A basic blockchain implementation in Golang
+
 ## Usage
 Get the balance for an address
 ```
@@ -40,6 +46,7 @@ $ go run main.go startnode -miner ADDRESS
 ```
 
 ## Wiki
+- [Basic Terminology](https://github.com/ibrahimsn98/blockchain-in-go/wiki/Basic-Terminology)
 - [How is the wallet address created?](https://github.com/ibrahimsn98/blockchain-in-go/wiki/How-is-the-wallet-address-created%3F)
 
 
@@ -52,3 +59,7 @@ $ go run main.go startnode -miner ADDRESS
 
 ### Video Tutorials
 [Tensor Programming](https://www.youtube.com/channel/UCYqCZOwHbnPwyjawKfE21wg)
+
+## License
+[MIT](https://choosealicense.com/licenses/mit/)
+

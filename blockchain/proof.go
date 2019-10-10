@@ -10,13 +10,16 @@ import (
 	"math/big"
 )
 
+// PoW difficulty
 const Difficulty = 12
 
+// Represents proof of work
 type ProofOfWork struct {
 	Block  *Block
 	Target *big.Int
 }
 
+// Create new PoW
 func NewProof(b *Block) *ProofOfWork {
 	target := big.NewInt(1)
 	target.Lsh(target, uint(256-Difficulty))
